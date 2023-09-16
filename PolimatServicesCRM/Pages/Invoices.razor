@@ -130,11 +130,11 @@ else if (succesfullySent is false)
     <h3>Dodaj nową fakturę</h3>
     <EditForm Model="invoice" OnValidSubmit="AddInvoiceSubmitHandle">
         <DataAnnotationsValidator />
-        <InputSelect @bind-Value="invoice.ClientId">
+        <InputSelect @bind-Value="invoice.ClientId" >
             @for (int i = 0; i < clients.Count; i++)
             {
                 int index = i;
-                <option value="@clients[index].ClientId" @onselect="() => SelectedClient(index)">@clients[index].ClientName @clients[index].ClientNip</option>
+                <option value="@clients[index].ClientId" @onclick="(e) => SelectedClient(clients[index].ClientId)">@clients[index].ClientName @clients[index].ClientNip</option>
             }
         </InputSelect>
 
@@ -192,6 +192,11 @@ else if (succesfullySent is false)
             </InputSelect>
         </div>
         <div class="mb-3">
+            <p style="color: #900009;">Fakturę wystawił</p>
+
+            <InputText @bind-Value="invoice.CreatedBy" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
             <button type="submit" class="btn-success">Dodaj fakturę</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
         </div>
         <ValidationSummary></ValidationSummary>
@@ -211,7 +216,7 @@ else if (succesfullySent is false)
             @for (int i = 0; i < clients.Count; i++)
             {
                 int index = i;
-                <option value="@clients[index].ClientId" @onselect="() => SelectedClient(index)">@clients[index].ClientName @clients[index].ClientNip</option>
+                <option value="@clients[index].ClientId" @onclick="(e) => SelectedClient(clients[index].ClientId)">@clients[index].ClientName @clients[index].ClientNip</option>
             }
         </InputSelect>
         <table class="table-striped">
@@ -266,6 +271,11 @@ else if (succesfullySent is false)
                     <option value="@pm">@pm</option>
                 }
             </InputSelect>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Fakturę wystawił</p>
+
+            <InputText @bind-Value="invoice.CreatedBy" class="form-control"></InputText>
         </div>
         <div class="mb-3">
             <p style="color: #900009;">Czy zapłacone</p>

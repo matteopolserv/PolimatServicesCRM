@@ -12,7 +12,7 @@ namespace PolimatServicesCRM.Models
         public List<ProductServiceModel> Products { get; set; } = new();
         public DateTime CretedTime { get; set; } = DateTime.Now;
         public DateTime PaymentDeadline { get; set; } = DateTime.Now.AddDays(14);
-        public string CreatedBy { get; set; } = string.Empty;
+        public string CreatedBy { get; set; } = "Mateusz Chejzdral";
         public string RceivedBy { get; set; } = string.Empty;
         public string PaymentMethod { get; set; } = string.Empty;
         public List<string> PaymentMethods { get;} = new() 

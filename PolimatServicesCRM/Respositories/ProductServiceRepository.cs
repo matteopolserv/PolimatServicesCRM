@@ -15,7 +15,7 @@ namespace PolimatServicesCRM.Respositories
         public async Task<bool> AddProductService(ProductServiceModel productService)
         {
             productService.ProductServiceId = Guid.NewGuid().ToString();
-            productService.InvoiceModelInvoiceId = "6f980b9d-b106-4b30-9c04-fad8a96651ed";
+            productService.InvoiceModelInvoiceId = "2b28825e-13ee-4dc7-b4e0-5cfb2463982c";
             productService.SetNetBrutAmmounts();
             await _ctx.ProductsServices.AddAsync(productService);
             return await _ctx.SaveChangesAsync() > 0;

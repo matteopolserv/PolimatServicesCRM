@@ -1115,7 +1115,7 @@ namespace PolimatServicesCRM.Services
                 VerticalAlignment = Element.ALIGN_CENTER
 
             };
-            PdfPCell cellinvoiceset = new(new Phrase("Fakturę wystawił: \n Mateusz Chejzdral", new Font(myfont, 8)))
+            PdfPCell cellinvoiceset = new(new Phrase($"Fakturę wystawił: \n {invoice.CreatedBy}", new Font(myfont, 8)))
             {
                 Border = Rectangle.BOTTOM_BORDER | Rectangle.TOP_BORDER | Rectangle.LEFT_BORDER | Rectangle.RIGHT_BORDER,
                 BorderWidthBottom = 0,

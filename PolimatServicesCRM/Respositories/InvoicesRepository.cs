@@ -18,6 +18,8 @@ namespace PolimatServicesCRM.Respositories
             foreach (var prod in invoice.Products)
             {
                 prod.InvoiceModelInvoiceId = invoice.InvoiceId;
+                prod.MadeDate = invoice.CretedTime;
+                prod.Payed = invoice.Payed;
                 prod.ProductServiceId = Guid.NewGuid().ToString();
             }
             invoice.SetNetBrutAmmount();
@@ -66,6 +68,13 @@ namespace PolimatServicesCRM.Respositories
 
         public async Task<bool> UpdateInvoice(InvoiceModel invoice)
         {
+            foreach (var prod in invoice.Products)
+            {
+                prod.InvoiceModelInvoiceId = invoice.InvoiceId;
+                prod.MadeDate = invoice.CretedTime;
+                prod.Payed = invoice.Payed;
+                if(string.IsNullOrEmpty(prod.ProductServiceId))prod.ProductServiceId = Guid.NewGuid().ToString();
+            }
             invoice.SetNetBrutAmmount();
             _ctx.Invoices.Update(invoice);
             return await _ctx.SaveChangesAsync() > 0;

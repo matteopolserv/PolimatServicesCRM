@@ -4,6 +4,6 @@ namespace PolimatServicesCRM.Interfaces
 {
     public interface ISendEmail
     {
-        Task<bool> SendInvoiceToClient(PdfFileModel pdfFile, string clientEmail);
+        Task<bool> SendInvoiceToClient(PdfFileModel pdfFile, string clientEmail, string createdBy);
     }
 }

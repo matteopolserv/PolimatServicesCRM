@@ -8,12 +8,7 @@ namespace PolimatServicesCRM.Pages
     {
         [Parameter]
         public EventCallback<InvoiceModel> OnClientSelected { get; set; }
-        [Parameter]
-        public EventCallback<List<InvoiceModel>> InvoiceAdded { get; set; }
-        [Parameter]
-        public EventCallback<List<ProductServiceModel>> ProductServiceAdded { get; set; }
-        [Parameter]
-        public EventCallback<List<ProductServiceModel>> ProductServiceRemoved { get; set; }
+       
         InvoiceModel invoice = new();
         ClientModel client = new();
 
@@ -35,7 +30,8 @@ namespace PolimatServicesCRM.Pages
         {
             invoices = await _invoices.GetAllInvoices();
             clients = await _clients.GetAllClients();
-            Products = new();
+            if(invoice.Products.Count > 0) Products = invoice.Products;
+            else Products = new();
             if (!string.IsNullOrEmpty(_transfer.InvoiceId))
             {
                 invoice = await _invoices.GetInvoiceById(_transfer.InvoiceId);
@@ -96,14 +92,13 @@ namespace PolimatServicesCRM.Pages
             invoice.Products = Products;
             bool updated = await _invoices.UpdateInvoice(invoice);
             succesfullySaved = updated;
-
-            await InvoiceAdded.InvokeAsync(invoices);
+                        
             await OnInitializedAsync();
         }
         private async Task DeleteInvoiceSubmitHandle()
         {
             bool deleted = await _invoices.DeleteInvoice(invoice);
-            await InvoiceAdded.InvokeAsync(invoices);
+            
             Reset();
             succesfullyDeleted = deleted;
             await OnInitializedAsync();
@@ -116,20 +111,21 @@ namespace PolimatServicesCRM.Pages
 
         private void RemoveProductService(int i) => Products.RemoveAt(i);
 
-        private void SelectedClient(int i)
+        private void SelectedClient(string value)
         {
-            client = clients[i];
-            receivedBy = client.ClientOthers;
-            invoice.RceivedBy = receivedBy;
+            client = clients.FirstOrDefault(x => x.ClientId.Equals(value));
+            invoice.RceivedBy = client.ClientOthers;
+           
             product.ClientId = client.ClientId;
+            OnClientSelected.InvokeAsync(invoice);
 
         }
         private async Task SendInvoiceToClientByEmail(int i)
         {
             invoice = invoices[i];
-            ClientModel clientReceiver = await _clients.GetClientById(invoice.InvoiceId);
+            ClientModel clientReceiver = await _clients.GetClientById(invoice.ClientId);
             PdfFileModel invoiceFile = await _generatePDF.GenerateInvoicePdf(invoice.InvoiceId);
-            bool sent = await _sendEmail.SendInvoiceToClient(invoiceFile, "matteo@lotier.pl");
+            bool sent = await _sendEmail.SendInvoiceToClient(invoiceFile, clientReceiver.ClientEmail, invoice.CreatedBy);
             succesfullySent = sent;
         }
 

@@ -362,4 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 DataBase/
-Services/SendEmail.cs
+.Services/SendEmail.cs
