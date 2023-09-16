@@ -1,0 +1,284 @@
+﻿@page "/invoices"
+@using PolimatServicesCRM.Interfaces;
+@using PolimatServicesCRM.Models;
+@using System.Globalization;
+@inject TransferStateModel _transfer
+@inject IInvoicesRepository _invoices
+@inject InvoiceStateModel _state
+@inject NavigationManager _navigation
+@inject IClientsRepository _clients
+@inject IGeneratePdf _generatePDF
+@inject ISendEmail _sendEmail
+@inject IJSRuntime JS
+
+<PageTitle>Faktury</PageTitle>
+
+@if (succesfullyAdded is true)
+{
+    <p class="alert-success">Fakturę zapisano w bazie danych</p>
+}
+else if (succesfullyAdded is false)
+{
+    <p class="alert-danger">Błąd przy dodawaniu faktury do bazy danych</p>
+}
+@if (succesfullySaved is true)
+{
+    <p class="alert-success">Modyfikacje zapisane pomyślnie</p>
+}
+else if (succesfullySaved is false)
+{
+    <p class="alert-danger">Błąd przy zapisie modyfikacji do bazy danych</p>
+}
+@if (succesfullyDeleted is true)
+{
+    <p class="alert-success">Usunięto pomyślnie</p>
+}
+else if (succesfullyDeleted is false)
+{
+    <p class="alert-danger">Błąd przy usuwaniu z bazy danych</p>
+}
+@if (succesfullySent is true)
+{
+    <p class="alert-success">Fakturę wysłano pomyślnie</p>
+}
+else if (succesfullySent is false)
+{
+    <p class="alert-danger">Wystąpił błąd przy wysyłaniu faktury</p>
+}
+<table class="table table-dark table-striped">
+    <thead>
+        <tr>
+            <th>Numer faktury</th>
+            <th>Nazwa klienta</th>
+            <th>Kwota(zł)</th>
+            <th>Zobacz szczegóły</th>
+            <th>Edytuj fakturę</th>
+            <th>Wyślij do klienta</th>
+            <th>Pobierz</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < invoices.Count; i++)
+        {
+            int index = i;
+            var client = clients.FirstOrDefault(c => c.ClientId.Equals(invoices[index].ClientId));
+            <tr>
+                <td>@invoices[index].InvoiceNumber</td>
+                <td>@client.ClientName</td>
+                <td>@invoices[index].TotalNetAmmount</td>
+                <td @onclick="() => ShowInvoiceDetails(index)">Szczegóły</td>
+                <td @onclick="() => EditInvoice(index)">Edytuj fakturę</td>
+                <td @onclick="() => SendInvoiceToClientByEmail(index)">Wyślij</td>
+                <td @onclick="() => DownloadInvoice(index)">Pobierz</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button type="button" class="btn-primary" @onclick="AddInvoice">Dodaj fakturę</button>
+@if (showInvoice)
+{
+    <h4>Szczegóły faktury</h4>
+    <p>Numer faktury: @invoice.InvoiceNumber</p>
+    <p>Nazwa klienta: @client.ClientName</p>
+    <h4>Usługi i produkty</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nazwa usługi/produktu</th>
+                <th>Cena jednostkowa</th>
+                <th>Ilość</th>
+                <th>Stawka VAT(%)</th>
+                <th>Kwota VAT (zł)</th>
+                <th>Kwota brutto (zł)</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @foreach (var prod in invoice.Products)
+            {
+                <tr>
+                    <td>@prod.ProductServiceName</td>
+                    <td>@prod.ProductServicePrice</td>
+                    <td>@prod.ProductServiceNumber</td>
+                    <td>@prod.ProductServiceVat</td>
+                    <td>@prod.ProductServiceVatAmmount</td>
+                    <td>@prod.ProductServiceTotal</td>
+                </tr>
+            }
+
+
+        </tbody>
+    </table>
+    <p>Łączna kwota brutto: @invoice.TotalBrutAmmount</p>
+    <p>Data wystawienia: @invoice.CretedTime.ToString("D", new CultureInfo("pl-PL"))</p>
+    <p>Termin płatności: @invoice.PaymentDeadline.ToString("D", new CultureInfo("pl-PL"))</p>
+    <p>Forma płatności: @invoice.PaymentMethod</p>
+    <p>Wystawiona przez: @invoice.CreatedBy</p>
+    <p>Czy zapłacone: @if (invoice.Payed)
+        {
+            <span>Tak</span>
+        }
+        else
+        {
+            <span>Nie</span>
+        }</p>
+    <p></p>
+    <p>Id Faktury: @invoice.InvoiceId</p>
+}
+@if (addInvoice)
+{
+    <h3>Dodaj nową fakturę</h3>
+    <EditForm Model="invoice" OnValidSubmit="AddInvoiceSubmitHandle">
+        <DataAnnotationsValidator />
+        <InputSelect @bind-Value="invoice.ClientId">
+            @for (int i = 0; i < clients.Count; i++)
+            {
+                int index = i;
+                <option value="@clients[index].ClientId" @onselect="() => SelectedClient(index)">@clients[index].ClientName @clients[index].ClientNip</option>
+            }
+        </InputSelect>
+
+        <table class="table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nazwa usługi</th>
+                    <th>Cena jednostkowa netto</th>
+                    <th>Ilość</th>
+                    <th>Stawka Vat</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @for (int i = 0; i < Products.Count; i++)
+                {
+                    int index = i;
+                    <tr>
+                        <td>@(index + 1)</td>
+                        <td><input type="text" value="@Products[index].ProductServiceName" @onchange="(e) => UpdateProductName(index, e.Value.ToString())" /></td>
+                        <td><input type="text" value="@Products[index].ProductServicePrice" @onchange="(e) => UpdateProductPrice(index, e.Value.ToString())" /></td>
+                        <td><input type="number" value="@Products[index].ProductServiceNumber" @onchange="(e) => UpdateProductNumber(index, e.Value.ToString())" /></td>
+                        <td><input type="number" value="@Products[index].ProductServiceVat" @onchange="(e) => UpdateProductVat(index, e.Value.ToString())" /></td>
+                        <td><button type="button" class="btn-danger" @onclick="() => RemoveProductService(index)">Usuń</button></td>
+                    </tr>
+                }
+                <button type="button" @onclick="AddNewProductRow">Dodaj wiersz</button>
+
+            </tbody>
+        </table>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wystawienia faktury</p>
+            <InputDate @bind-Value="invoice.CretedTime" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Termin płatności</p>
+            <InputDate @bind-Value="invoice.PaymentDeadline" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Fakturę otrzymał</p>
+
+            <InputText @bind-Value="invoice.RceivedBy" class="form-control"></InputText>
+        </div>
+
+        <div class="mb-3">
+            <p style="color: #900009;">Metoda płatności</p>
+            <InputSelect @bind-Value="invoice.PaymentMethod">
+                @foreach (var pm in invoice.PaymentMethods)
+                {
+
+                    <option value="@pm">@pm</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Dodaj fakturę</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+        <ValidationSummary></ValidationSummary>
+    </EditForm>
+}
+@if (editInvoice)
+{
+    <h3>Edytuj fakturę</h3>
+    <EditForm Model="invoice" OnValidSubmit="SaveChangesSubmitHandle">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Numer faktury</p>
+
+            <InputNumber @bind-Value="invoice.InvoiceNumber" class="form-control"></InputNumber>
+        </div>
+        <InputSelect @bind-Value="invoice.ClientId">
+            @for (int i = 0; i < clients.Count; i++)
+            {
+                int index = i;
+                <option value="@clients[index].ClientId" @onselect="() => SelectedClient(index)">@clients[index].ClientName @clients[index].ClientNip</option>
+            }
+        </InputSelect>
+        <table class="table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nazwa usługi</th>
+                    <th>Cena jednostkowa netto</th>
+                    <th>Ilość</th>
+                    <th>Stawka Vat</th>
+                    <th>Usuń</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @for (int i = 0; i < Products.Count; i++)
+                {
+                    int index = i;
+                    <tr>
+                        <td>@(index + 1)</td>
+                        <td><input type="text" value="@Products[index].ProductServiceName" @onchange="(e) => UpdateProductName(index, e.Value.ToString())" /></td>
+                        <td><input type="text" value="@Products[index].ProductServicePrice" @onchange="(e) => UpdateProductPrice(index, e.Value.ToString())" /></td>
+                        <td><input type="number" value="@Products[index].ProductServiceNumber" @onchange="(e) => UpdateProductNumber(index, e.Value.ToString())" /></td>
+                        <td><input type="number" value="@Products[index].ProductServiceVat" @onchange="(e) => UpdateProductVat(index, e.Value.ToString())" /></td>
+                        <td><button type="button" class="btn-danger" @onclick="() => RemoveProductService(index)">Usuń</button></td>
+                    </tr>
+                }
+                <button type="button" @onclick="AddNewProductRow">Dodaj wiersz</button>
+
+            </tbody>
+        </table>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wystawienia faktury</p>
+            <InputDate @bind-Value="invoice.CretedTime" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Termin płatności</p>
+            <InputDate @bind-Value="invoice.PaymentDeadline" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Fakturę otrzymał</p>
+
+            <InputText @bind-Value="invoice.RceivedBy" class="form-control"></InputText>
+        </div>
+
+        <div class="mb-3">
+            <p style="color: #900009;">Metoda płatności</p>
+            <InputSelect @bind-Value="invoice.PaymentMethod">
+                @foreach (var pm in invoice.PaymentMethods)
+                {
+
+                    <option value="@pm">@pm</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Czy zapłacone</p>
+            <InputCheckbox @bind-Value="invoice.Payed">Zapłacone</InputCheckbox>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Zapisz modyfikacje</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+
+
+        <ValidationSummary></ValidationSummary>
+    </EditForm>
+    <div class="mb-3">
+        <button type="reset" class="btn-danger" @onclick="DeleteInvoiceSubmitHandle">Usuń fakturę</button>
+    </div>
+}

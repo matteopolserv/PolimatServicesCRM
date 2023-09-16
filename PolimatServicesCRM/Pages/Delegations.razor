@@ -1,0 +1,219 @@
+﻿@page "/delegations"
+@using PolimatServicesCRM.Interfaces;
+@using PolimatServicesCRM.Models;
+@using System.Globalization;
+@inject InvoiceStateModel _state
+@inject NavigationManager _navigation
+@inject IGeneratePdf _generatePDF
+@inject IJSRuntime JS
+@inject IDelegationsRepository _delegations
+
+<PageTitle>Faktury</PageTitle>
+@if (succesfullyAdded is true)
+{
+    <p class="alert-success">Fakturę zapisano w bazie danych</p>
+
+}
+else if (succesfullyAdded is false)
+{
+    <p class="alert-danger">Błąd przy dodawaniu faktury do bazy danych</p>
+}
+@if (succesfullySaved is true)
+{
+    <p class="alert-success">Modyfikacje zapisane pomyślnie</p>
+}
+else if (succesfullySaved is false)
+{
+    <p class="alert-danger">Błąd przy zapisie modyfikacji do bazy danych</p>
+}
+@if (succesfullyDeleted is true)
+{
+    <p class="alert-success">Usunięto pomyślnie</p>
+}
+else if (succesfullyDeleted is false)
+{
+    <p class="alert-danger">Błąd przy usuwaniu z bazy danych</p>
+}
+<table class="table table-dark table-striped">
+    <thead>
+        <tr>
+            <th>Miejsce docelowe</th>
+            <th>Data wyjazdu</th>
+            <th>Data powrotu</th>
+            <th>Cel wyjazdu</th>
+            <th>Zobacz szczegóły</th>
+            <th>Edytuj</th>
+            <th>Pobierz</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < delegations.Count; i++)
+        {
+            int index = i;
+            <tr>
+                <td>@delegations[index].DeleagationArrivngPlace</td>
+                <td>@delegations[index].DelegationStartDate.ToString("D", new CultureInfo("pl-PL"))</td>
+                <td>@delegations[index].DelegationEndDate.ToString("D", new CultureInfo("pl-PL"))</td>
+                <td>@delegations[index].DelegationPurpose</td>
+                <td @onclick="() => ShowDetails(index)">Szczegóły</td>
+                <td @onclick="() => EditDelegation(index)">Edytuj</td>
+                <td @onclick="() => DownloadDelegation(index)">Pobierz</td>
+            </tr>
+        }
+
+    </tbody>
+</table>
+<button type="button" class="btn-primary" @onclick="() => AddDelgation()">Dodaj delegację</button>
+@if (addDelegation)
+{
+    <h4>Dodaj nową delegację</h4>
+    <EditForm Model="delegation" OnValidSubmit="AddDelegationSubmitHandle">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Imię i nazwisko delegowanego</p>
+            <InputText @bind-Value="delegation.DelegatedName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stanowisko delegowanego</p>
+            <InputText @bind-Value="delegation.DelegatedPost" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wyjazdu</p>
+            <InputDate @bind-Value="delegation.DelegationStartDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data powrotu</p>
+            <InputDate @bind-Value="delegation.DelegationEndDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miejsce wyjazdu</p>
+            <InputText @bind-Value="delegation.DeleagationDeparturePlace" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miejsce docelowe</p>
+            <InputText @bind-Value="delegation.DeleagationArrivngPlace" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Cel wyjazdu</p>
+            <InputText @bind-Value="delegation.DelegationPurpose" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Środek transportu</p>
+            <InputText @bind-Value="delegation.Vechicle" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Imię i nazwisko zlecającego wyjazd</p>
+            <InputText @bind-Value="delegation.DelegatingName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stanowisko zlecającego wyjazd</p>
+            <InputText @bind-Value="delegation.DelegatingPost" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Liczba przejechanych kilometrów</p>
+            <InputNumber @bind-Value="delegation.Distance" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Dobowa stawka żywieniowa</p>
+            <InputNumber @bind-Value="delegation.DeleagationPerDiemRate" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stawka za kilometr</p>
+            <InputNumber @bind-Value="delegation.DistanceDistanceRate" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Dodaj delegację</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+    </EditForm>
+}
+@if (editDelegation)
+{
+    <h4>Edytuj delegację</h4>
+    <EditForm Model="delegation" OnValidSubmit="EditDelegationSubmitHandle">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Imię i nazwisko delegowanego</p>
+            <InputText @bind-Value="delegation.DelegatedName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stanowisko delegowanego</p>
+            <InputText @bind-Value="delegation.DelegatedPost" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wyjazdu</p>
+            <InputDate @bind-Value="delegation.DelegationStartDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data powrotu</p>
+            <InputDate @bind-Value="delegation.DelegationEndDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miejsce wyjazdu</p>
+            <InputText @bind-Value="delegation.DeleagationDeparturePlace" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miejsce docelowe</p>
+            <InputText @bind-Value="delegation.DeleagationArrivngPlace" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Cel wyjazdu</p>
+            <InputText @bind-Value="delegation.DelegationPurpose" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Środek transportu</p>
+            <InputText @bind-Value="delegation.Vechicle" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Imię i nazwisko zlecającego wyjazd</p>
+            <InputText @bind-Value="delegation.DelegatingName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stanowisko zlecającego wyjazd</p>
+            <InputText @bind-Value="delegation.DelegatingPost" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Liczba przejechanych kilometrów</p>
+            <InputNumber @bind-Value="delegation.Distance" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Dobowa stawka żywieniowa</p>
+            <InputNumber @bind-Value="delegation.DeleagationPerDiemRate" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stawka za kilometr</p>
+            <InputNumber @bind-Value="delegation.DistanceDistanceRate" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Zapisz zmiany</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+    </EditForm>
+    <button class="btn-danger" type="button" @onclick="DeleteDelegationSubmitHandle">Usuń delegację</button>
+}
+@if (showDetails)
+{
+    <h4>Szczegóły delegacji</h4>
+    <p>Imię i nazwisko delegowanego: @delegation.DelegatedName</p>
+    <p>Stanowisko delegowanego: @delegation.DelegatedPost</p>
+    <p>Data wyjazdu: @delegation.DelegationStartDate</p>
+    <p>Data powrotu: @delegation.DelegationEndDate</p>
+    <p>Miejsce początkowe: @delegation.DeleagationDeparturePlace</p>
+    <p>Miejsce docielowe: @delegation.DeleagationArrivngPlace</p>
+    <p>Cel wyjazdu: @delegation.DelegationPurpose</p>
+    <p>Środek transportu: @delegation.Vechicle</p>
+    <p>Imię i nazwisko zlecającego wyjazd: @delegation.DelegatingName</p>
+    <p>Stanowisko zlecającego wyjazd: @delegation.DelegatingPost</p>
+    <h5>Rozliczenie</h5>
+    <p>Wypłacona zaliczka: 0 PLN</p>
+    <p>Przejechany dystans: @delegation.Distance km</p>
+    <p>Kwota za przejechany dystans: @delegation.DistanceTotalCost PLN</p>
+    <p>Data wyjazdu: @delegation.DelegationStartDate</p>
+    <p>Data powrotu: @delegation.DelegationEndDate</p>
+    <p>Czas w delegacji: @delegation.DeleagationDuringTime godzin</p>
+    <p>Należność z racji diety @delegation.DeleagationPerDiemTotal PLN</p>
+    <p><strong>Łącznie do wypłaty @delegation.DelegationTotalCost PLN</strong></p>
+    <h5>Stawki</h5>
+    <p>Stawka za 1 km: @delegation.DistanceDistanceRate PLN</p>
+    <p>Stawka żywieniowa za dobrę: @delegation.DeleagationPerDiemRate PLN</p>
+    <p></p>
+    <button type="reset" class="btn-primary" @onclick="Reset">Ukryj</button>
+}

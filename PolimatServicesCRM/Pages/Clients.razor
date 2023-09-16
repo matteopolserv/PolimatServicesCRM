@@ -1,0 +1,200 @@
+﻿@page "/clients"
+@using PolimatServicesCRM.Interfaces;
+@using PolimatServicesCRM.Models;
+@inject IClientsRepository _clients
+@inject IInvoicesRepository _invoices
+@inject IProductServiceRepository _products
+@inject NavigationManager _navigation
+@inject ShowHideClientInfoStateModel _clientInfoStateModel
+@inject TransferStateModel _transfer
+<PageTitle>Clients</PageTitle>
+
+<h3>Lista klientów</h3>
+@if (addesSuccesfully is true)
+{
+    <p class="alert-success">Pomyślnie zapisano zmiany</p>
+}
+else if (addesSuccesfully is false)
+{
+    <p class="alert-danger">Błąd przy zapisywaniu zmian</p>
+}
+@if (savedSuccesfully is true)
+{
+    <p class="alert-success">Pomyślnie zapisano zmiany</p>
+}
+else if (savedSuccesfully is false)
+{
+    <p class="alert-danger">Błąd przy zapisywaniu zmian</p>
+}
+<table class="table table-striped table-dark">
+    <thead>
+        <tr>
+            <th>Nazwa klienta</th>
+            <th>Zobacz dane klienta</th>
+            <th>Edytuj dane klienta</th>
+
+        </tr>
+    </thead>
+    @if (clients.Count > 0)
+    {
+        <tbody>
+            @for (int i = 0; i < clients.Count; i++)
+            {
+                int index = i;
+                <tr>
+                    <td>@clients[index].ClientName</td>
+                    <td><button class="btn-info" @onclick="() => ShowClientInfo(index)">Zobacz</button></td>
+                    <td><button class="btn-info" @onclick="() => EditClientInfo(index)">Edytuj</button></td>
+                </tr>
+            }
+        </tbody>
+    }
+</table>
+<p></p>
+<button type="button" class="btn-primary" onclick="@(() => AddClient())">Dodaj klienta</button>
+@if (showClient is true)
+{
+    <h4>Dane klienta</h4>
+    <p>Id: @client.ClientId</p>
+    <p>Nazwa: @client.ClientName</p>
+    <p>Adres: @client.ClientAddress</p>
+    <p>Miejscowość: @client.ClientCity</p>
+    <p>Kod pocztowy: @client.ClientZip</p>
+    <p>Kraj: @client.ClientCountry</p>
+    <p>Telefon: @client.ClientPhoneNumber</p>
+    <p>Email: @client.ClientEmail</p>
+    <p>Przedstawiciel/Odbiorca faktur: @client.ClientOthers</p>
+    <p>Uwagi: @client.Notices</p>
+    <p>Lista faktur:</p>
+    <ol>
+        @foreach (var inv in tempInvoices)
+        {
+            string invoiceId = inv.InvoiceId;
+            <li onclick="@(() => RedirectToInvoice(invoiceId))">@inv.InvoiceNumber @inv.CretedTime</li>
+        }
+    </ol>
+
+    <p>Lista usług / kupionych produktów:</p>
+    <ol>
+        @foreach (var prods in tempProducts)
+        {
+            string productServieId = prods.ProductServiceId;
+            <li onclick="@(() => RedirectToProductService(productServieId))">@prods.ProductServiceName</li>
+        }
+    </ol>
+    <button type="button" class="btn-primary" @onclick="Reset">Ukryj dane użytkownika</button>
+}
+
+@if (editClient is true)
+{
+    <h3>Edytuj dane użytkownika @client.ClientName</h3>
+    <EditForm Model="client" OnValidSubmit="HandleSaveUserInfoSubmit">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa klienta</p>
+            <InputText @bind-Value="client.ClientName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Adres klienta</p>
+            <InputText @bind-Value="client.ClientAddress" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miasto</p>
+            <InputText @bind-Value="client.ClientCity" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Kod pocztowy</p>
+            <InputText @bind-Value="client.ClientZip" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Kraj</p>
+            <InputText @bind-Value="client.ClientCountry" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Telefon</p>
+            <InputText @bind-Value="client.ClientPhoneNumber" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Email</p>
+            <InputText @bind-Value="client.ClientEmail" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">NIP</p>
+            <InputText @bind-Value="client.ClientNip" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">REGON</p>
+            <InputText @bind-Value="client.ClientRegon" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Przedstawiciel - odbiorca faktur</p>
+            <InputText @bind-Value="client.ClientOthers" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Uwagi</p>
+            <InputText @bind-Value="client.Notices" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Zapisz zmiany</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+
+        <ValidationSummary></ValidationSummary>
+    </EditForm>
+}
+@if (addClient is true)
+{
+    <h3>Dodaj nowego użytkownika</h3>
+    <EditForm Model="client" OnValidSubmit="HandleAddUserSubmit">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa klienta</p>
+            <InputText @bind-Value="client.ClientName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Adres klienta</p>
+            <InputText @bind-Value="client.ClientAddress" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Miasto</p>
+            <InputText @bind-Value="client.ClientCity" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Kod pocztowy</p>
+            <InputText @bind-Value="client.ClientZip" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Kraj</p>
+            <InputText @bind-Value="client.ClientCountry" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Telefon</p>
+            <InputText @bind-Value="client.ClientPhoneNumber" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Email</p>
+            <InputText @bind-Value="client.ClientEmail" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">NIP</p>
+            <InputText @bind-Value="client.ClientNip" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">REGON</p>
+            <InputText @bind-Value="client.ClientRegon" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Przedstawiciel - odbiorca faktur</p>
+            <InputText @bind-Value="client.ClientOthers" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Uwagi</p>
+            <InputText @bind-Value="client.Notices" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Dodaj klienta</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+
+        <ValidationSummary></ValidationSummary>
+    </EditForm>
+
+}

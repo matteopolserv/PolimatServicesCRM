@@ -1,0 +1,183 @@
+﻿@page "/productsservices"
+@using PolimatServicesCRM.Interfaces;
+@using PolimatServicesCRM.Models;
+@using System.Globalization;
+@inject TransferStateModel _transfer
+@inject IProductServiceRepository _products
+@inject ProductServiceStateModel _state
+@inject NavigationManager _navigation
+@inject IClientsRepository _clients
+
+
+<PageTitle>Produkty i usługi</PageTitle>
+@if (succesfullyAdded is true)
+{
+    <p class="alert-success">Produkt lub usługę zapisano w bazie danych</p>
+}
+else if (succesfullyAdded is false)
+{
+    <p class="alert-danger">Błąd przy dodawaniu usługi do bazy danych</p>
+}
+@if (succesfullySaved is true)
+{
+    <p class="alert-success">Modyfikacje zapisane pomyślnie</p>
+}
+else if (succesfullySaved is false)
+{
+    <p class="alert-danger">Błąd przy zapisie modyfikacji do bazy danych</p>
+}
+@if (succesfullyDeleted is true)
+{
+    <p class="alert-success">Usunięto pomyślnie</p>
+}
+else if (succesfullyDeleted is false)
+{
+    <p class="alert-danger">Błąd przy usuwaniu z bazy danych</p>
+}
+<table class="table table-dark table-striped">
+    <thead>
+        <tr>
+            <th>Nazwa produktu lub usługi</th>
+            <th>Data wykonania</th>
+            <th>Należność</th>
+            <th>Zapłacone</th>
+            <th>Szczegóły</th>
+            <th>Edytuj</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < products.Count; i++)
+        {
+            int index = i;
+
+            <tr>
+                <td>@products[index].ProductServiceName</td>
+                <td>@products[index].MadeDate.ToString("D", new CultureInfo("pl-PL"))</td>
+                <td>@products[index].ProductServiceNetAmmount</td>
+                <td>@if (products[index].Payed)
+                    {
+                        <span>Tak</span>
+                    }
+                    else
+                    {
+                        <span>Nie</span>
+                    }</td>
+                <td @onclick="() => ShowDetails(index)">Pokaż szczegóły</td>
+                <td @onclick="() => EditProduct(index)">Edytuj</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button class="btn-info" @onclick="@(() => AddProduct())">Dodaj produkt lub usługę</button>
+@if (showDetails)
+{
+    <h4>Szczegóły produktu lub usługi</h4>
+    <p>Nazwa: @product.ProductServiceName</p>
+    <p>Nazwa klienta: @client.ClientName</p>
+    <p>Cena netto: @product.ProductServiceNetAmmount</p>
+    <p>Data wykonania: @product.MadeDate.ToString("D", new CultureInfo("pl-PL"))</p>
+    <p>Uwagi: @product.Notices</p>
+    <p>Czy zapłacone: @if (product.Payed)
+        {
+            <span>Tak</span>
+            ;
+        }
+        else
+        {
+            <span>Nie</span>
+            ;
+        }</p>
+}
+@if (addProduct)
+{
+    <h4>Dodaj produkt lub usługę</h4>
+    <EditForm Model="product" OnValidSubmit="AddProductServiceSubmitHandle">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa klienta</p>
+            <InputSelect @bind-Value="product.ClientId" class="form-control">
+                @foreach (var cl in clients)
+                {
+                    <option value="@cl.ClientId">@cl.ClientName</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa usługi</p>
+            <InputText @bind-Value="product.ProductServiceName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Cena jednostkowa</p>
+            <InputNumber @bind-Value="product.ProductServicePrice" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Liczba sztuk</p>
+            <InputNumber @bind-Value="product.ProductServiceNumber" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stawka Vat</p>
+            <InputNumber @bind-Value="product.ProductServiceVat" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wykonania</p>
+            <InputDate @bind-Value="product.MadeDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Uwagi</p>
+            <InputTextArea @bind-Value="product.Notices" class="form-control"></InputTextArea>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Dodaj produkt lub usługę</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+    </EditForm>
+}
+@if (editProduct)
+{
+    <h4>Dodaj produkt lub usługę</h4>
+    <EditForm Model="product" OnValidSubmit="EditProductServiceSubmitHandle">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa klienta</p>
+            <InputSelect @bind-Value="product.ClientId" class="form-control">
+                @foreach (var cl in clients)
+                {
+                    <option value="@cl.ClientId">@cl.ClientName</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Nazwa usługi</p>
+            <InputText @bind-Value="product.ProductServiceName" class="form-control"></InputText>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Cena jednostkowa</p>
+            <InputNumber @bind-Value="product.ProductServicePrice" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Liczba sztuk</p>
+            <InputNumber @bind-Value="product.ProductServiceNumber" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Stawka Vat</p>
+            <InputNumber @bind-Value="product.ProductServiceVat" class="form-control"></InputNumber>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Data wykonania</p>
+            <InputDate @bind-Value="product.MadeDate" class="form-control"></InputDate>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Uwagi</p>
+            <InputTextArea @bind-Value="product.Notices" class="form-control"></InputTextArea>
+        </div>
+        <div class="mb-3">
+            <p style="color: #900009;">Czy zapłacone</p>
+            <InputCheckbox @bind-Value="product.Payed" class="form-check-input"></InputCheckbox>
+        </div>
+
+
+        <div class="mb-3">
+            <button type="submit" class="btn-success">Zapisz modyfikacje</button> <button type="reset" class="btn-primary" @onclick="Reset">Anuluj/Ukryj</button>
+        </div>
+    </EditForm>
+}
